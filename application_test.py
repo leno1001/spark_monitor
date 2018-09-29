@@ -60,7 +60,7 @@ class SparkMonitor(object):
                 applications_points = [{
                     "measurement": "sparkMonitorRestApiApplicationsLevel",
                     "tags": {
-                        "id": application.get("id")
+                        "applicationId": application.get("id")
                     },
                     "fields": {
                         "name": application.get("name"),
@@ -101,6 +101,7 @@ class SparkMonitor(object):
                         "completionTime": job.get("completionTime"),
                         "totalDuration": totalDuration,
                         "status": job.get("status"),
+                        "numStages": len(job.get("stageIds")),
                         "numTasks": job.get("numTasks"),
                         "numActiveTasks": job.get("numActiveTasks"),
                         "numCompletedTasks": job.get("numCompletedTasks"),
@@ -127,6 +128,10 @@ class SparkMonitor(object):
                     for s in v:
                         if str(s) == str(stage.get("stageId")):
                             jobId = k
+                            nat = stage.get("numActiveTasks")
+                            nct = stage.get("numCompleteTasks")
+                            nft = stage.get("numFailedTasks")
+                            totalTasks = nat + nct + nft
                             stages_points = [{
                                 "measurement": "sparkMonitorRestApiStagesLevel",
                                 "tags": {
@@ -137,10 +142,11 @@ class SparkMonitor(object):
                                 },
                                 "fields": {
                                     "status": stage.get("status"),
-                                    "numActiveTasks": stage.get("numActiveTasks"),
-                                    "numCompletedTasks": stage.get("numCompletedTasks"),
-                                    "numFailedTasks": stage.get("numFailedTasks"),
-                                    "executorRuntime": stage.get("executorRuntime"),
+                                    "numActiveTasks": nat,
+                                    "numCompletedTasks": nct,
+                                    "numFailedTasks": nft,
+                                    "totalTasks": totalTasks,
+                                    "executorRuntime": stage.get("executorRunTime"),
                                     "inputBytes": stage.get("inputBytes"),
                                     "inputRecords": stage.get("inputRecords"),
                                     "outputBytes": stage.get("outputBytes"),
@@ -153,8 +159,8 @@ class SparkMonitor(object):
                                     "diskBytesSpilled": stage.get("diskBytesSpilled"),
                                     "name": stage.get("name"),
                                     "details": stage.get("details"),
-                                    "schedulingPool": stage.get("schedulingPool"),
-                                    "accumulatorUpdates": ','.join(stage.get("accumulatorUpdates"))
+                                    "schedulingPool": stage.get("schedulingPool", "unknown"),
+                                    "accumulatorUpdates": len(stage.get("accumulatorUpdates"))
                                 }
                             }]
                             flag = True
@@ -199,6 +205,18 @@ class SparkMonitor(object):
     def write_rdds_data(self, *rdds):
         pass
 
+    def write_streaming__statistic_data(self, *statistics):
+        pass
+
+    def write_streaming__receiver_data(self, *receivers):
+        pass
+
+    def write_streaming__batch_data(self, *batches):
+        pass
+
+    def write_environment_data(self, *env):
+        pass
+
 
 def main(app_url):
     sm = SparkMonitor()
@@ -223,9 +241,29 @@ def main(app_url):
         #rdd_data = SparkMonitor.request_url(rdd_url)
         #sm.write_rdds_data(rdd_data)
 
+        streaming_statistic_url = pre + "streaming/statistics"
+        #streaming_statistic_data = SparkMonitor.request_url(streaming_statistic_url)
+        #sm.write_streaming__statistic_data(app_id, streaming_statistic_data)
+
+        streaming_receiver_url = pre + "streaming/receivers"
+        #streaming_receiver_data = SparkMonitor.request_url(streaming_receiver_url)
+        #sm.write_streaming__receiver_data(app_id, streaming_receiver_data)
+
+        streaming_batch_url = pre + "streaming/batches"
+        #streaming_batch_data = SparkMonitor.request_url(streaming_batch_url)
+        #sm.write_streaming__batch_data(app_id, streaming_batch_data)
+
+        environment_url = pre + "environment"
+        #environment_data = SparkMonitor.request_url(environment_url)
+        #sm.write_environment_data(app_id, environment_data)
+
 
 if __name__ == "__main__":
-    root_url = "http://h002194.mars.grid.sina.com.cn:4040/api/v1/applications"
-    #while True:
-    main(root_url)
-    #time.sleep(1)
+    while True:
+        try:
+            port = 4040
+            root_url = "http://h002194.mars.grid.sina.com.cn:" + str(port) + "/api/v1/applications"
+            main(root_url)
+        except Exception as e:
+            SparkMonitor.logger.error(e)
+            break
