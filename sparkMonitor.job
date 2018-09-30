@@ -1,0 +1,2 @@
+type=command
+command=sh -x sparkMonitor.sh
