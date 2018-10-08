@@ -17,6 +17,7 @@ def connect_client(points):
         client.write_points(points)
         logger.info("write data succeeded")
     except exceptions.InfluxDBClientError as e:
+        logger.info("write data failed")
         logger.error(e)
     finally:
         logger.info("close influxdb client")

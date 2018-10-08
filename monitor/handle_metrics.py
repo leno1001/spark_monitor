@@ -40,6 +40,7 @@ class handleMetrics(object):
                 connect_client(applications_points)
             return tuple(app_ids)
         except Exception as e:
+            handleMetrics.logger.info("applicationId: %s" % (application.get("id")))
             handleMetrics.logger.error(e)
 
     def write_jobs_data(self, appId, *jobs):
@@ -83,6 +84,7 @@ class handleMetrics(object):
                 connect_client(jobs_points)
             return job_stages
         except Exception as e:
+            handleMetrics.logger.info("applicationId: %s, jobId: %s" % (appId, job.get("jobId")))
             handleMetrics.logger.error(e)
 
     def write_stages_data(self, appId, job_info, *stages):
@@ -135,15 +137,16 @@ class handleMetrics(object):
                     if flag:
                         break
         except Exception as e:
+            handleMetrics.logger.info("applicationId: %s, jobId: %s, stageId: %s" % (appId, jobId, stage.get("stageId")))
             handleMetrics.logger.error(e)
 
-    def write_executors_data(self, app_id, *executors):
+    def write_executors_data(self, appId, *executors):
         try:
             for executor in executors[0]:
                 executors_points = [{
                     "measurement": "sparkMonitorRestApiExecutorsLevel",
                     "tags": {
-                        "applicationId": app_id,
+                        "applicationId": appId,
                         "executorId": executor.get("id"),
                         "hostName": executor.get("hostPort").split(":")[0]
                     },
@@ -166,6 +169,7 @@ class handleMetrics(object):
                 }]
                 connect_client(executors_points)
         except Exception as e:
+            handleMetrics.logger.info("applicationId: %s, executorId: %s" % (appId, executor.get("id")))
             handleMetrics.logger.error(e)
 
     def write_rdds_data(self, *rdds):
