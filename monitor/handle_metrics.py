@@ -1,46 +1,12 @@
 # -*- coding: utf-8 -*-
-import requests
-from influxdb import InfluxDBClient
-from influxdb import exceptions
-import logging
 import time
 import datetime
+from log_format import log_format
+from connect_influxdb_client import connect_client
 
 
-class SparkMonitor(object):
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s %(funcName)s %(levelname)s %(lineno)d %(message)s')
-    logger = logging.getLogger(__name__)
-
-    def __init__(self):
-        super(SparkMonitor, self).__init__()
-
-    @staticmethod
-    def connect_client(points):
-        host = '10.77.113.56'
-        port = 8086
-        user = 'root'
-        password = 'kafka!@#'
-        database = 'jmxDB'
-        try:
-            client = InfluxDBClient(host, port, user, password, database)
-            client.write_points(points)
-            SparkMonitor.logger.info("write data succeeded")
-        except exceptions.InfluxDBClientError as e:
-            SparkMonitor.logger.error(e)
-        finally:
-            SparkMonitor.logger.info("close influxdb client")
-            client.close()
-
-    @staticmethod
-    def request_url(url):
-        try:
-            r = requests.get(url)
-            if r.status_code == 200:
-                return r.json()
-            else:
-                SparkMonitor.logger.info(r.text)
-        except Exception as e:
-            SparkMonitor.logger.error(e)
+class handleMetrics(object):
+    logger = log_format()
 
     def write_applications_data(self, *applications):
         app_ids = []
@@ -71,10 +37,10 @@ class SparkMonitor(object):
                     }
                 }]
                 app_ids.append(application.get("id"))
-                self.connect_client(applications_points)
+                connect_client(applications_points)
             return tuple(app_ids)
         except Exception as e:
-            SparkMonitor.logger.error(e)
+            handleMetrics.logger.error(e)
 
     def write_jobs_data(self, appId, *jobs):
         job_stages = {}
@@ -114,10 +80,10 @@ class SparkMonitor(object):
                     }
                 }]
                 job_stages.update({job.get("jobId"): job.get("stageIds")})
-                self.connect_client(jobs_points)
+                connect_client(jobs_points)
             return job_stages
         except Exception as e:
-            SparkMonitor.logger.error(e)
+            handleMetrics.logger.error(e)
 
     def write_stages_data(self, appId, job_info, *stages):
 
@@ -164,12 +130,12 @@ class SparkMonitor(object):
                                 }
                             }]
                             flag = True
-                            self.connect_client(stages_points)
+                            connect_client(stages_points)
                             break
                     if flag:
                         break
         except Exception as e:
-            SparkMonitor.logger.error(e)
+            handleMetrics.logger.error(e)
 
     def write_executors_data(self, app_id, *executors):
         try:
@@ -198,9 +164,9 @@ class SparkMonitor(object):
                         "stderr": executor.get("executorLogs").get("stderr")
                     }
                 }]
-                self.connect_client(executors_points)
+                connect_client(executors_points)
         except Exception as e:
-                SparkMonitor.logger.error(e)
+            handleMetrics.logger.error(e)
 
     def write_rdds_data(self, *rdds):
         pass
@@ -216,55 +182,3 @@ class SparkMonitor(object):
 
     def write_environment_data(self, *env):
         pass
-
-
-def main(app_url):
-    sm = SparkMonitor()
-    app_data = SparkMonitor.request_url(app_url)
-    app_ids = sm.write_applications_data(app_data)
-    for app_id in app_ids:
-        pre = root_url + "/" + app_id + "/"
-
-        job_url = pre + "jobs"
-        job_data = SparkMonitor.request_url(job_url)
-        job_stages = sm.write_jobs_data(app_id, job_data)
-
-        stage_url = pre + "stages"
-        stage_data = SparkMonitor.request_url(stage_url)
-        sm.write_stages_data(app_id, job_stages, stage_data)
-
-        executor_url = pre + "executors"
-        executor_data = SparkMonitor.request_url(executor_url)
-        sm.write_executors_data(app_id, executor_data)
-
-        rdd_url = pre + "storage/rdd"
-        #rdd_data = SparkMonitor.request_url(rdd_url)
-        #sm.write_rdds_data(rdd_data)
-
-        streaming_statistic_url = pre + "streaming/statistics"
-        #streaming_statistic_data = SparkMonitor.request_url(streaming_statistic_url)
-        #sm.write_streaming__statistic_data(app_id, streaming_statistic_data)
-
-        streaming_receiver_url = pre + "streaming/receivers"
-        #streaming_receiver_data = SparkMonitor.request_url(streaming_receiver_url)
-        #sm.write_streaming__receiver_data(app_id, streaming_receiver_data)
-
-        streaming_batch_url = pre + "streaming/batches"
-        #streaming_batch_data = SparkMonitor.request_url(streaming_batch_url)
-        #sm.write_streaming__batch_data(app_id, streaming_batch_data)
-
-        environment_url = pre + "environment"
-        #environment_data = SparkMonitor.request_url(environment_url)
-        #sm.write_environment_data(app_id, environment_data)
-
-
-if __name__ == "__main__":
-    while True:
-        try:
-            port = 4040
-            root_url = "http://h002194.mars.grid.sina.com.cn:" + str(port) + "/api/v1/applications"
-            main(root_url)
-            #time.sleep(1)
-        except Exception as e:
-            SparkMonitor.logger.error(e)
-            break
