@@ -53,14 +53,15 @@ def main(app_url):
         #hm.write_environment_data(app_id, environment_data)
 
 
-logger = log_format()
-while True:
-    try:
-        port = 4040
-        root_url = "http://h002194.mars.grid.sina.com.cn:" + str(port) + "/api/v1/applications"
-        main(root_url)
-        logger.info("the time interval is 10 seconds")
-        time.sleep(10)
-    except Exception as e:
-        logger.error(e)
-        break
+if __name__ == "__main__":
+    logger = log_format()
+    while True:
+        try:
+            port = 4040
+            root_url = "http://h002194.mars.grid.sina.com.cn:" + str(port) + "/api/v1/applications"
+            main(root_url)
+            logger.info("the time interval is 10 seconds")
+            time.sleep(10)
+        except Exception as e:
+            logger.error(e)
+            break
