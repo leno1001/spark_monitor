@@ -12,7 +12,8 @@ def connect_client(points):
     database = 'jmxDB'
     logger = log_format()
     try:
-        client = InfluxDBClient(host, port, user, password, database)
+        # using Http
+        client = InfluxDBClient(host, port, user, password, database, timeout=5)
         client.write_points(points)
         logger.info("write data succeeded")
     except exceptions.InfluxDBClientError as e:

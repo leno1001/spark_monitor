@@ -3,6 +3,7 @@ import logging
 
 
 def log_format():
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s %(funcName)s %(levelname)s %(lineno)d %(message)s')
-    logger = logging.getLogger(__name__)
+    #log information is printed to the screen
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s %(filename)s %(funcName)s %(levelname)s %(lineno)d %(message)s')
+    logger = logging.getLogger()
     return logger
